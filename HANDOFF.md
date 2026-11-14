@@ -1,6 +1,6 @@
 # Handoff — read this file only; open others when a step needs them
 
-Updated after every experiment. Last update: 2026-11-14, Sprint 3 started.
+Updated after every experiment. Last update: 2026-11-14, Sprint 3 after E3.
 
 ## Resume in one minute
 
@@ -27,6 +27,8 @@ Best known settings (CPU):
 `--backend cpu --params-backend te=cpu,diffusion=cpu,vae=cpu --mmap --steps 4 --cfg-scale 1 --sampling-method euler --flow-shift 3 --vae-tiling --model-args qwen_image_zero_cond_t=true`
 plus the Lightning 4-step LoRA. Baseline at 512x512, one reference:
 532 s total (encoder 18, denoising 354, VAE decode 69), 1.9 GB held.
+Fastest so far: 1 step, no `--vae-tiling`: 151 s, 3.3 GB held, correct on an
+easy edit only. Step count on harder edits is being tested (E5).
 
 ## Next action
 

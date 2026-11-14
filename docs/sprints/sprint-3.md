@@ -42,12 +42,42 @@ on the laptop.
 No ready-made 2-step add-on exists, so run the 4-step add-on at 2 steps.
 **Prediction:** image-making takes about 176 s (half). Picture quality:
 unknown; my guess is visibly softer but recognisable.
-**Result:** in flight.
+**Result:** image-making took 179 s. Total 350 s. The picture
+(`docs/results/2026-11-14-cpu-512-2step.png`) shows the correct edit and I
+cannot see a difference from the 4-step picture at normal viewing size.
+**Verdict:** time prediction confirmed. Quality was better than I guessed.
 
 ### E3 — Turn the result into a picture in one piece instead of 9 tiles
 
+Run at 1 step to keep it short; this stage does not depend on step count.
 **Prediction:** this stage drops from 69 s to 25–40 s; held memory rises to
 3–4 GB during it.
-**Result:** queued after E2.
+**Result:** 31 s; held memory peaked at 3.3 GB.
+**Verdict:** confirmed. A fair trade on a 16 GB machine.
+**Unplanned finding:** this run used a single step, and its picture
+(`docs/results/2026-11-14-cpu-512-1step.png`) is also a correct, clean edit.
+Whole run: 151 s (prompt-reading 18, image-making 80, picture conversion 31,
+the rest loading and reading the reference).
 
-**Queued next:** E4 work at 384x384 (theory 5); E5 the engine's built-in step reuse (theory 3).
+## Scoreboard (512x512, one reference, same machine, same edit)
+
+| Settings | Total | Held memory |
+|---|---|---|
+| Sprint 1 settings, 4 steps | 628 s | 9.0 GB |
+| Read in place, 4 steps | 532 s | 1.9 GB |
+| Read in place, 2 steps | 350 s | 1.9 GB |
+| Read in place, 1 step, untiled conversion | 151 s | 3.3 GB |
+
+Caution: the test edit (change the words on a sign) is an easy one, and it is
+one picture. Fewer steps may fail on harder edits such as changing clothes,
+pose or background. E5 tests that before anyone relies on 1 or 2 steps.
+
+### E5 — Do 1 and 2 steps survive a harder edit? (theory 4)
+
+Prompt: "put a red knitted hat on the cat and change the background to a sunny
+beach", at 1, 2 and 4 steps.
+**Prediction:** 1 step shows visible flaws (smeared or half-changed areas);
+2 steps is acceptable; 4 steps is clean.
+**Result:** in flight.
+
+**Queued next:** E4 work at 384x384 then enlarge (theory 5); E6 fold the add-on into the model file (theory 6).
