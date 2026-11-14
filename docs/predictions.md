@@ -150,6 +150,12 @@ per edit on this machine, so the number of pictures, not their size, is the
 main cost. Held memory stayed 3.4–3.5 GB throughout. Pictures:
 `docs/results/2026-11-14-H*.jpg` (each shows inputs, then result).
 
+**Step 1 conclusion:** two pictures per pass works (H1, H2, H3b); three or
+four pictures in one pass fails every time (H4, H4', H4k), with the extra
+pictures turned into extra people. One change per pass (H4chain) does the full
+outfit + scene + pose edit. Pose must be given as a skeleton (H3b), not a
+stick figure (H3a) or a photo (H3c). Cost on this machine: ~12 min per change.
+
 Added during the run (after H3a–H3c, before H4k ran): H3b showed the pose
 skeleton is the pose input that works, so H4 is also run with it.
 
@@ -163,7 +169,7 @@ pass 2 = that result + beach; pass 3 = that result + pose skeleton.
 
 | Test | Our prediction | Measured |
 |---|---|---|
-| H4chain | All 3 changes right; face drifts slightly with each pass; passes 2 and 3 ~12 min each, so ~36 min for all three changes | — |
+| H4chain | All 3 changes right; face drifts slightly with each pass; passes 2 and 3 ~12 min each, so ~36 min for all three changes | **Works: 3 of 3.** Red jacket, beach, both arms raised; face recognisable at every pass (smaller in the final full-body frame); trousers invented. Passes 722 + 718 + 690 s = 2130 s (35.5 min). Confirmed, time included. Picture: `docs/results/2026-11-14-H4chain.jpg` (subject, pass 1, pass 2, pass 3) |
 
 ### Step 2 — laptop, CPU, 4 steps, 512x512 (owner runs)
 
