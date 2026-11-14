@@ -13,10 +13,12 @@ param(
   [string]$Prompt = "the person from image 1, photorealistic portrait, studio lighting",
   [string]$Device = "",            # blank = first Vulkan device from --list-devices
   [double]$MaxVramGiB = 1.0,
-  # Where weights live. "disk" re-reads them from the model file on demand and
-  # keeps RAM use lowest (needed on 16 GB machines with integrated graphics,
-  # where GPU memory is carved out of system RAM). Try "cpu" as a second experiment.
-  [ValidateSet("disk","cpu")] [string]$Weights = "disk",
+  # Where the model weights live:
+  #   mapped = read in place from the model file (lowest memory; CPU runs only)
+  #   disk   = re-read from the file on demand, private copy kept in memory
+  #   cpu    = whole model copied into RAM
+  # Blank = "mapped" for -Device cpu, "disk" for a graphics device.
+  [ValidateSet("", "mapped", "disk", "cpu")] [string]$Weights = "",
   [string]$Lora = "",              # e.g. Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16 (file in models\)
   [int]$Size = 512,
   [int]$Steps = 4,
@@ -51,10 +53,15 @@ New-Item -ItemType Directory -Force -Path $Out | Out-Null
 $Log = Join-Path $Out "log.txt"
 $env:GGML_VK_REUSE_BUFFERS = "0"   # idle-buffer cache is outside --max-vram
 
+if (-not $Weights) { $Weights = if ($Device -eq "cpu") { "mapped" } else { "disk" } }
+if ($Weights -eq "mapped" -and $Device -ne "cpu") { Write-Host "mapped weights need -Device cpu" -ForegroundColor Red; exit 1 }
+$pb = if ($Weights -eq "mapped") { "te=cpu,diffusion=cpu,vae=cpu" } else { "te=$Weights,diffusion=$Weights,vae=cpu" }
+Write-Host "weights: $Weights"
+
 $a = @(
   "--diffusion-model", $Dit, "--vae", $Vae, "--llm", $Llm, "--llm_vision", $Vision,
   "--backend", "te=cpu,diffusion=$Device,vae=$Device",
-  "--params-backend", "te=$Weights,diffusion=$Weights,vae=cpu",
+  "--params-backend", $pb,
   "--max-vram", "$MaxVramGiB",
   "--steps", "$Steps", "--cfg-scale", "1.0", "--sampling-method", "euler", "--flow-shift", "3",
   "-W", "$Size", "-H", "$Size", "--vae-tiling",
@@ -63,6 +70,7 @@ $a = @(
   "-o", (Join-Path $Out "result.png"), "-v"
 )
 foreach ($r in $Refs) { $a += @("-r", $r) }
+if ($Weights -eq "mapped") { $a += "--mmap" }
 if ($Lora) {
   $a += @("--lora-model-dir", "$Root\models")
   $i = [array]::IndexOf($a, "-p"); $a[$i + 1] = "$Prompt<lora:${Lora}:1>"
