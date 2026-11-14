@@ -110,6 +110,36 @@ figure with both arms raised. All at 2 steps, 512x512.
 In all four the face should stay recognisably the same person; H3 and H4 are
 where that is most at risk. Any failure is re-run at 4 steps to separate "too
 few steps" from "wrong approach".
-**Result:** queued behind E5.
+**Result:** inputs in `docs/results/2026-11-14-h-inputs.png`, outputs in
+`docs/results/2026-11-14-h1-h4-outputs.png`.
+
+| Test | Time | Held | What happened | Verdict |
+|---|---|---|---|---|
+| H1 outfit | 408 s | 3.4 GB | Red leather jacket on, same face, room unchanged | Works, as predicted |
+| H2 scene | 391 s | 3.4 GB | Standing on the beach, same face, same T-shirt | Works, as predicted |
+| H3 pose | 393 s | 3.4 GB | Both arms raised, full body, same person. Side effects: writing on the board and the shirt logo turned to scribble; camera pulled back so the face is smaller | Works. I predicted this one would fail; I was wrong |
+| H4 all | 790 s | 3.5 GB | Pose right, jacket right. Jeans became a blue skirt. Background is plain white instead of the beach. Edges soft | 2 of 3, as predicted. Time prediction (9 min) was wrong: 13 min |
+
+What failed and the likely reasons:
+- **Scene lost in H4.** The outfit picture has a white background, and the
+  model seems to have taken that instead of the beach. With four pictures the
+  instruction "beach from Picture 3" lost out.
+- **Jeans became a skirt.** The outfit reference itself was poor: the jeans in
+  it are a blurry blue shape (it was generated at 2 steps from a blank canvas).
+  Bad reference in, bad result out.
+- **Time.** Four pictures take twice as long per step as two. Cost grows with
+  every picture added, which is exactly what reference reuse (theory 1) attacks.
+
+### H5 and H6 — Too few steps, or wrong approach?
+
+Two ways to fix H4, tested separately:
+
+| Test | Approach | Prediction (fixed before the run) |
+|---|---|---|
+| H5 | Same as H4 but 4 steps | Sharper, but the background is still not the beach: more steps do not fix a picture the model misread. About 23 minutes |
+| H6 | In stages: outfit first (H1's result), then pose, then scene, two pictures at a time | All three changes present. The face drifts a little with each pass. About 13 minutes on top of H1 |
+
+**Result:** in flight (H6 first, then H5).
+
 
 **Queued next:** E4 work at 384x384 then enlarge (theory 5); E6 fold the add-on into the model file (theory 6).

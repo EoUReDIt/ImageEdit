@@ -1,6 +1,6 @@
 # Handoff — read this file only; open others when a step needs them
 
-Updated after every experiment. Last update: 2026-11-14, Sprint 3 after E3.
+Updated after every experiment. Last update: 2026-11-14, Sprint 3 after H1-H4 (outfit/scene/pose).
 
 ## Resume in one minute
 
@@ -28,7 +28,9 @@ Best known settings (CPU):
 plus the Lightning 4-step LoRA. Baseline at 512x512, one reference:
 532 s total (encoder 18, denoising 354, VAE decode 69), 1.9 GB held.
 Fastest so far: 1 step, no `--vae-tiling`: 151 s, 3.3 GB held, correct on an
-easy edit only. Step count on harder edits is being tested (E5).
+easy edit only. Harder edits need 4 steps to be clean (E5). Outfit, scene and pose each work
+with 2 pictures; all four pictures at once loses the scene (H4). Test images:
+`/home/user/testimg/` (subject.png is upstream `assets/qwen/example.png` at 512).
 
 ## Next action
 
