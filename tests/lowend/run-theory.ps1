@@ -13,6 +13,11 @@ param(
   [string]$Prompt = "the person from image 1, photorealistic portrait, studio lighting",
   [string]$Device = "",            # blank = first Vulkan device from --list-devices
   [double]$MaxVramGiB = 1.0,
+  # Where weights live. "disk" re-reads them from the model file on demand and
+  # keeps RAM use lowest (needed on 16 GB machines with integrated graphics,
+  # where GPU memory is carved out of system RAM). Try "cpu" as a second experiment.
+  [ValidateSet("disk","cpu")] [string]$Weights = "disk",
+  [string]$Lora = "",              # e.g. Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16 (file in models\)
   [int]$Size = 512,
   [int]$Steps = 4,
   [long]$Seed = 42
@@ -26,7 +31,7 @@ function Find-One($dir, $include, $exclude, $what) {
   $f.FullName
 }
 $SdCli  = Find-One "$Root\sd"     @("sd-cli.exe") $null "sd-cli.exe"
-$Dit    = Find-One "$Root\models" @("*image*edit*.gguf") $null "edit model"
+$Dit    = Find-One "$Root\models" @("*image*edit*.gguf") "Lightning" "edit model"
 $Vae    = Find-One "$Root\models" @("*vae*.safetensors") $null "VAE"
 $Vision = Find-One "$Root\models" @("*mmproj*.gguf") $null "vision projector"
 $Llm    = Find-One "$Root\models" @("*VL*.gguf") "mmproj" "text encoder"
@@ -49,7 +54,7 @@ $env:GGML_VK_REUSE_BUFFERS = "0"   # idle-buffer cache is outside --max-vram
 $a = @(
   "--diffusion-model", $Dit, "--vae", $Vae, "--llm", $Llm, "--llm_vision", $Vision,
   "--backend", "te=cpu,diffusion=$Device,vae=$Device",
-  "--params-backend", "te=cpu,diffusion=cpu,vae=cpu",
+  "--params-backend", "te=$Weights,diffusion=$Weights,vae=cpu",
   "--max-vram", "$MaxVramGiB",
   "--steps", "$Steps", "--cfg-scale", "1.0", "--sampling-method", "euler", "--flow-shift", "3",
   "-W", "$Size", "-H", "$Size", "--vae-tiling",
@@ -58,6 +63,10 @@ $a = @(
   "-o", (Join-Path $Out "result.png"), "-v"
 )
 foreach ($r in $Refs) { $a += @("-r", $r) }
+if ($Lora) {
+  $a += @("--lora-model-dir", "$Root\models")
+  $i = [array]::IndexOf($a, "-p"); $a[$i + 1] = "$Prompt<lora:${Lora}:1>"
+}
 
 # Peak dedicated VRAM (all processes), sampled twice a second in the background.
 $sampler = Start-Job {
@@ -88,6 +97,8 @@ $result = [ordered]@{
   steps             = $Steps
   images            = $Refs.Count + 1
   max_vram_gib      = $MaxVramGiB
+  weights           = $Weights
+  lora              = $Lora
   encoder_seconds   = Phase 'get_learned_condition completed, taking ([\d.]+)s'
   denoise_seconds   = Phase 'sampling completed, taking ([\d.]+)s'
   vae_seconds       = Phase 'decode_first_stage completed, taking ([\d.]+)s'
