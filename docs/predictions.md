@@ -136,13 +136,19 @@ reported to be reliable with 2–3 references only).
 
 | Test | Pictures | Our prediction | Gemini's prediction | Measured |
 |---|---|---|---|---|
-| H1 outfit | subject + outfit | Works; garment approximate; face kept. ~10 min total | Succeeds at 4 steps | — |
-| H2 scene | subject + scene | Works; face kept. ~10 min | Succeeds at 4 steps | — |
-| H3a pose, stick figure | subject + hand-drawn stick figure | Pose partly followed or stick figure painted in. ~10 min | Struggles | — |
-| H3b pose, keypoint map | subject + coloured skeleton | Pose followed better than H3a | (not tested in review) | — |
-| H3c pose, photo | subject + generated photo of a person in the pose | Pose followed; risk of face mixing with the pose person | Much better than stick figure | — |
-| H4 all four | subject + outfit + scene + stick figure | 1–2 of 3 changes right; face drifts. ~15 min; held < 4 GB | Reveals whether Q2_K blurs the face | — |
+| H1 outfit | subject + outfit | Works; garment approximate; face kept. ~10 min total | Succeeds at 4 steps | **Works.** Face, hair, pose, background kept; jacket detail carried over; one sleeve came out black. 722 s (12 min). Both predictions right on quality; our time 20% low |
+| H2 scene | subject + scene | Works; face kept. ~10 min | Succeeds at 4 steps | **Works.** Face and clothes kept, beach correct; looks slightly pasted in; still holds the marker. 782 s (13 min). Both right on quality |
+| H3a pose, stick figure | subject + hand-drawn stick figure | Pose partly followed or stick figure painted in. ~10 min | Struggles | **Both happened:** arms raised, face kept, but the stick figure is drawn over her and the board text vanished. 744 s. Both right |
+| H3b pose, keypoint map | subject + coloured skeleton | Pose followed better than H3a | (not tested in review) | **Works, cleanly.** Full-body arms-up pose, face kept, background kept, nothing drawn in; trousers invented for the full body. 701 s. Confirmed. Disproves the review's "not trained on skeletons" |
+| H3c pose, photo | subject + generated photo of a person in the pose | Pose followed; risk of face mixing with the pose person | Much better than stick figure | **Fails:** the man is added beside her; her pose unchanged; faces not mixed. 707 s. Both predictions wrong |
+| H4 all four | subject + outfit + scene + stick figure | 1–2 of 3 changes right; face drifts. ~15 min; held < 4 GB | Reveals whether Q2_K blurs the face | **Fails, 0 of 3.** She is unchanged; two extra figures in red jackets appear (one is the mannequin given a face); no beach, no pose. Her face is sharp, so Q2_K is not the cause. 1408 s (23.5 min); held 3.45 GB. Ours wrong (worse, slower); memory right |
 | H4' three | subject + outfit + scene | 2 of 2 changes right; face kept. ~12 min | (not tested in review) | — |
+
+Step 1 timing pattern (image-making, 4 steps): 1 picture 323 s (E5), 2
+pictures 590–654 s, 4 pictures 1224 s. Each extra picture adds roughly 290–330 s
+per edit on this machine, so the number of pictures, not their size, is the
+main cost. Held memory stayed 3.4–3.5 GB throughout. Pictures:
+`docs/results/2026-11-14-H*.jpg` (each shows inputs, then result).
 
 Added during the run (after H3a–H3c, before H4k ran): H3b showed the pose
 skeleton is the pose input that works, so H4 is also run with it.
