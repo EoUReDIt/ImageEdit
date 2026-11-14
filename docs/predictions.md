@@ -28,3 +28,38 @@ real model through `tests/lowend/run-theory.ps1` (upstream stable-diffusion.cpp)
 ## Results log
 
 (append: date, device, command, output or JSON)
+
+### 2026-11-14 — cloud container, CPU only (4 cores, AVX-512, 15 GB RAM, no GPU)
+
+Upstream stable-diffusion.cpp `0f8a467`, CPU build. Models:
+`qwen-image-edit-2511-Q2_K.gguf`, `Qwen2.5-VL-7B-Instruct.Q3_K_S.gguf` +
+`mmproj-Q8_0`, `qwen_image_vae.safetensors`. Flags: `--backend cpu
+--params-backend te=disk,diffusion=disk,vae=cpu --cfg-scale 1 --vae-tiling
+--model-args qwen_image_zero_cond_t=true`, one reference image.
+
+**Run 1: 256x256, 1 step, no LoRA.** No prediction was fixed beforehand.
+
+| Phase | Measured |
+|---|---|
+| VAE encode of reference | 6.4 s |
+| Encoder (VLM, cold) | 24.0 s |
+| Denoising, 1 step | 29.2 s |
+| VAE decode | 11.0 s |
+| Total | 70.8 s |
+| Peak process memory | 7.8 GB |
+
+Finding: the arithmetic baseline in this ledger was too pessimistic. It
+counted all 20B parameters per token; the model has separate image-stream and
+text-stream weights, so each token passes through about half of them.
+
+**Run 2: 512x512, 4 steps, 4-step Lightning LoRA.** Prediction fixed before
+the run, scaled from Run 1: denoising ~320 s (4 x ~80 s), encoder ~24 s,
+peak memory 8–9 GB.
+
+| Phase | Predicted | Measured |
+|---|---|---|
+| Encoder | ~24 s | — |
+| Denoising, 4 steps | ~320 s | — |
+| Peak process memory | 8–9 GB | — |
+| Total | — | — |
+
