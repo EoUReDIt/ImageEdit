@@ -210,6 +210,17 @@ folded weights become a private copy. Prediction: E5's hat edit image-making
 ~260 s (from 323 s, about 20% faster); held memory rises to 8–9 GB; loading
 takes 1–3 min longer.
 
+**E6' result: could not run.** Loading with the add-on folded in at load time
+crashes the engine (`GGML_ASSERT(*cur_backend_id != -1)` in
+`apply_loras_to_params`) both with read-in-place and with weights copied into
+memory (that attempt held 11.4 GB before crashing). Engine commit `0f8a467`.
+No speed number obtained; E1's measured ~22% remains the only evidence.
+
+Routes left for E6: (1) fold on a machine with ~48 GB memory; (2) download
+the ready-merged 8-bit file (20.6 GB) and compress it to Q2_K, which needs
+~30 GB free disk (this machine has ~17 GB); (3) check whether a newer engine
+version fixes the crash.
+
 Planned runs (not done): E6a = E5's hat-and-beach edit (compare image-making with E5's 323 s);
 E6b = H1 (compare with H1's 602 s). Prediction: both ~20% faster image-making,
 held memory ~0.8 GB lower during image-making.

@@ -1,6 +1,6 @@
 # Handoff — read this file only; open others when a step needs them
 
-Updated after every experiment. Last update: 2026-11-14, after outside review 1 and the claim 3 split.
+Updated after every experiment. Last update: 2026-11-14, after step 1 (H tests) and E6 attempts.
 
 ## Resume in one minute
 
@@ -45,6 +45,12 @@ Order after outside review 1 (`docs/reviews/2026-11-14-gemini-concept-review.md`
 5. FLUX.2 [klein] 4B on the same edits.
 
 Predictions for all five are in `docs/predictions.md`.
+
+Status 2026-11-14 evening: step 1 done (two pictures per pass works; three
+or four pictures fail; one change per pass does the full outfit + scene +
+pose edit in ~36 min; pose must be a skeleton). Step 4 (E6) blocked on this
+machine: folding needs ~38 GB memory and load-time folding crashes the
+engine. Steps 2, 3, 5 need the owner's laptop.
 
 See the last entry of `docs/sprints/sprint-3.md`: it always names the
 experiment in flight and the next one queued.
