@@ -142,7 +142,7 @@ reported to be reliable with 2–3 references only).
 | H3b pose, keypoint map | subject + coloured skeleton | Pose followed better than H3a | (not tested in review) | **Works, cleanly.** Full-body arms-up pose, face kept, background kept, nothing drawn in; trousers invented for the full body. 701 s. Confirmed. Disproves the review's "not trained on skeletons" |
 | H3c pose, photo | subject + generated photo of a person in the pose | Pose followed; risk of face mixing with the pose person | Much better than stick figure | **Fails:** the man is added beside her; her pose unchanged; faces not mixed. 707 s. Both predictions wrong |
 | H4 all four | subject + outfit + scene + stick figure | 1–2 of 3 changes right; face drifts. ~15 min; held < 4 GB | Reveals whether Q2_K blurs the face | **Fails, 0 of 3.** She is unchanged; two extra figures in red jackets appear (one is the mannequin given a face); no beach, no pose. Her face is sharp, so Q2_K is not the cause. 1408 s (23.5 min); held 3.45 GB. Ours wrong (worse, slower); memory right |
-| H4' three | subject + outfit + scene | 2 of 2 changes right; face kept. ~12 min | (not tested in review) | — |
+| H4' three | subject + outfit + scene | 2 of 2 changes right; face kept. ~12 min | (not tested in review) | **Fails, 0 of 2.** She is unchanged; the mannequin is added beside her with a face; no beach. 1026 s (17 min). Ours wrong. With these settings the working limit is 2 pictures, not 2–3 |
 
 Step 1 timing pattern (image-making, 4 steps): 1 picture 323 s (E5), 2
 pictures 590–654 s, 4 pictures 1224 s. Each extra picture adds roughly 290–330 s
@@ -156,6 +156,14 @@ skeleton is the pose input that works, so H4 is also run with it.
 | Test | Pictures | Our prediction | Measured |
 |---|---|---|---|
 | H4k four, skeleton | subject + outfit + scene + skeleton | Better than H4: no figure painted in; 2 of 3 changes right (four pictures is above the reported 2–3 limit). ~15 min | — |
+
+Added after H4p, before the run: **H4chain**, one change per pass, each pass
+with two pictures (the case that works): pass 1 = H1 result is reused (outfit);
+pass 2 = that result + beach; pass 3 = that result + pose skeleton.
+
+| Test | Our prediction | Measured |
+|---|---|---|
+| H4chain | All 3 changes right; face drifts slightly with each pass; passes 2 and 3 ~12 min each, so ~36 min for all three changes | — |
 
 ### Step 2 — laptop, CPU, 4 steps, 512x512 (owner runs)
 
