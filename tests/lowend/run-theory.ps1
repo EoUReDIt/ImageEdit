@@ -1,33 +1,53 @@
-# Runs the theory configuration on upstream stable-diffusion.cpp and records
-# time and peak VRAM. UNTESTED: written without access to a Windows machine.
+# Runs the theory configuration on upstream stable-diffusion.cpp and prints a
+# readable summary: time per phase, total time, peak VRAM, pass/fail.
+# UNTESTED: written without access to a Windows machine.
 #
-# Usage (PowerShell):
-#   .\run-theory.ps1 -SdCli C:\sd\sd-cli.exe -Dit C:\models\qwen-image-edit-2511-Q2_K.gguf `
-#     -Vae C:\models\qwen_image_vae.safetensors -Llm C:\models\Qwen2.5-VL-7B-Instruct-Q3_K_S.gguf `
-#     -LlmVision C:\models\Qwen2.5-VL-7B-Instruct.mmproj-Q8_0.gguf `
-#     -Subject subject.png -Refs outfit.png,scene.png -Prompt "the person from image 1 wearing the outfit from image 2 in the scene from image 3"
+# Expected layout (everything under one folder, default C:\imageedit):
+#   sd\        unzipped stable-diffusion.cpp Vulkan build (contains sd-cli.exe)
+#   models\    the DiT .gguf, the VAE .safetensors, the Qwen2.5-VL .gguf and its mmproj .gguf
+#   images\    subject.png, plus optional ref1.png, ref2.png, ref3.png
+#
+# Run:  powershell -ExecutionPolicy Bypass -File run-theory.ps1
 param(
-  [Parameter(Mandatory)] [string]$SdCli,
-  [Parameter(Mandatory)] [string]$Dit,
-  [Parameter(Mandatory)] [string]$Vae,
-  [Parameter(Mandatory)] [string]$Llm,
-  [string]$LlmVision = "",
-  [Parameter(Mandatory)] [string]$Subject,
-  [string[]]$Refs = @(),
-  [Parameter(Mandatory)] [string]$Prompt,
-  [string]$Device = "vulkan0",     # see: sd-cli.exe --list-devices
+  [string]$Root = "C:\imageedit",
+  [string]$Prompt = "the person from image 1, photorealistic portrait, studio lighting",
+  [string]$Device = "",            # blank = first Vulkan device from --list-devices
   [double]$MaxVramGiB = 1.0,
   [int]$Size = 512,
   [int]$Steps = 4,
-  [long]$Seed = 42,
-  [string]$Out = "theory-out"
+  [long]$Seed = 42
 )
 $ErrorActionPreference = "Stop"
+function Find-One($dir, $include, $exclude, $what) {
+  $f = Get-ChildItem -Path $dir -Recurse -File -Include $include |
+       Where-Object { -not $exclude -or $_.Name -notmatch $exclude } | Select-Object -First 1
+  if (-not $f) { Write-Host "MISSING: $what (looked in $dir)" -ForegroundColor Red; exit 1 }
+  Write-Host ("found {0,-16} {1}  ({2:N1} GB)" -f $what, $f.Name, ($f.Length / 1GB))
+  $f.FullName
+}
+$SdCli  = Find-One "$Root\sd"     @("sd-cli.exe") $null "sd-cli.exe"
+$Dit    = Find-One "$Root\models" @("*image*edit*.gguf") $null "edit model"
+$Vae    = Find-One "$Root\models" @("*vae*.safetensors") $null "VAE"
+$Vision = Find-One "$Root\models" @("*mmproj*.gguf") $null "vision projector"
+$Llm    = Find-One "$Root\models" @("*VL*.gguf") "mmproj" "text encoder"
+$Subject = Find-One "$Root\images" @("subject.*") $null "subject image"
+$Refs = @(Get-ChildItem -Path "$Root\images" -File -Filter "ref*.*" | Sort-Object Name | ForEach-Object FullName)
+Write-Host "reference images: $($Refs.Count)"
+
+if (-not $Device) {
+  $Device = (& $SdCli --list-devices 2>$null | Where-Object { $_ -match '^(?i)vulkan' } |
+             Select-Object -First 1) -replace "\s.*$", ""
+  if (-not $Device) { Write-Host "No Vulkan device found. Update your GPU driver." -ForegroundColor Red; exit 1 }
+}
+Write-Host "device: $Device   VRAM budget: $MaxVramGiB GiB   size: ${Size}x$Size   steps: $Steps`n"
+
+$Out = Join-Path $Root ("results\" + (Get-Date -Format "yyyyMMdd-HHmmss"))
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
+$Log = Join-Path $Out "log.txt"
 $env:GGML_VK_REUSE_BUFFERS = "0"   # idle-buffer cache is outside --max-vram
 
 $a = @(
-  "--diffusion-model", $Dit, "--vae", $Vae, "--llm", $Llm,
+  "--diffusion-model", $Dit, "--vae", $Vae, "--llm", $Llm, "--llm_vision", $Vision,
   "--backend", "te=cpu,diffusion=$Device,vae=$Device",
   "--params-backend", "te=cpu,diffusion=cpu,vae=cpu",
   "--max-vram", "$MaxVramGiB",
@@ -37,38 +57,47 @@ $a = @(
   "-s", "$Seed", "-p", $Prompt, "-r", $Subject,
   "-o", (Join-Path $Out "result.png"), "-v"
 )
-if ($LlmVision) { $a += @("--llm_vision", $LlmVision) }
 foreach ($r in $Refs) { $a += @("-r", $r) }
 
-# Peak dedicated VRAM across all processes, sampled twice a second.
+# Peak dedicated VRAM (all processes), sampled twice a second in the background.
 $sampler = Start-Job {
-  $peak = 0
   while ($true) {
     try {
-      $v = (Get-Counter '\GPU Adapter Memory(*)\Dedicated Usage' -ErrorAction Stop).CounterSamples |
-           Measure-Object -Property CookedValue -Maximum
-      if ($v.Maximum -gt $peak) { $peak = $v.Maximum; Write-Output $peak }
+      ((Get-Counter '\GPU Adapter Memory(*)\Dedicated Usage' -ErrorAction Stop).CounterSamples |
+        Measure-Object -Property CookedValue -Maximum).Maximum
     } catch {}
     Start-Sleep -Milliseconds 500
   }
 }
 $sw = [Diagnostics.Stopwatch]::StartNew()
-& $SdCli @a 2>&1 | Tee-Object -FilePath (Join-Path $Out "log.txt")
+$ErrorActionPreference = "Continue"
+& $SdCli @a 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $Log
 $code = $LASTEXITCODE
 $sw.Stop()
-$peak = (Receive-Job $sampler | Measure-Object -Maximum).Maximum
-Stop-Job $sampler; Remove-Job $sampler
+$samples = @(Receive-Job $sampler); Stop-Job $sampler; Remove-Job $sampler
+$peakMB = if ($samples.Count) { [math]::Round((($samples | Measure-Object -Maximum).Maximum) / 1MB) } else { $null }
 
+function Phase($pattern) {
+  $m = Select-String -Path $Log -Pattern $pattern | Select-Object -Last 1
+  if ($m) { [double]$m.Matches[0].Groups[1].Value } else { $null }
+}
 $result = [ordered]@{
-  exit_code       = $code
-  total_seconds   = [math]::Round($sw.Elapsed.TotalSeconds, 1)
-  peak_vram_mb    = if ($peak) { [math]::Round($peak / 1MB) } else { $null }
-  max_vram_gib    = $MaxVramGiB
-  size            = $Size
-  steps           = $Steps
-  references      = $Refs.Count + 1
-  pass_time_115s  = ($sw.Elapsed.TotalSeconds -le 115)
-  pass_vram_1800  = if ($peak) { ($peak / 1MB) -le 1800 } else { $null }
+  exit_code         = $code
+  device            = $Device
+  size              = $Size
+  steps             = $Steps
+  images            = $Refs.Count + 1
+  max_vram_gib      = $MaxVramGiB
+  encoder_seconds   = Phase 'get_learned_condition completed, taking ([\d.]+)s'
+  denoise_seconds   = Phase 'sampling completed, taking ([\d.]+)s'
+  vae_seconds       = Phase 'decode_first_stage completed, taking ([\d.]+)s'
+  generate_seconds  = Phase 'generate_image completed in ([\d.]+)s'
+  wall_seconds      = [math]::Round($sw.Elapsed.TotalSeconds, 1)
+  peak_vram_mb      = $peakMB
+  pass_time_115s    = ($code -eq 0 -and $sw.Elapsed.TotalSeconds -le 115)
+  pass_vram_1800mb  = if ($peakMB) { $peakMB -le 1800 } else { $null }
 }
 $result | ConvertTo-Json | Set-Content (Join-Path $Out "result.json")
-$result | Format-List
+Write-Host "`n================ SUMMARY ================" -ForegroundColor Cyan
+$result.GetEnumerator() | ForEach-Object { "{0,-18} {1}" -f $_.Key, $_.Value }
+Write-Host "saved to $Out" -ForegroundColor Cyan
