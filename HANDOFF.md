@@ -45,6 +45,15 @@ it does not veto building. Predictions are fixed before each test.
 
 ## Key findings so far
 
+- Sprint 2 (memory): reading weights in place from the model file
+  (`--backend cpu --params-backend ...=cpu --mmap`) cut peak held memory from
+  9.0 GB to 1.9 GB at 512x512 / 4 steps, 628 s -> 532 s, identical output, and
+  it still ran at normal speed with 9.9 GB of RAM occupied by another process.
+  `--params-backend disk` does NOT do this. See `docs/sprints/sprint-2.md`.
+- Owner's guiding rule: fill graphics memory and system memory only to a
+  balanced point, leave room for the OS, disk as overflow. Thesis and stops A–G
+  are in `docs/roadmap.md`. Reports must be written for a non-technical reader.
+
 - The full pipeline works end to end on upstream stable-diffusion.cpp with the
   2-bit model and the 4-step LoRA. Measured in the cloud container on 4 CPU
   cores, no GPU: 512x512, 4 steps, one reference = 628 s total (encoder 30 s,
@@ -62,17 +71,19 @@ it does not veto building. Predictions are fixed before each test.
 
 ## Next steps
 
-1. Owner: run `tests/lowend/run-theory.ps1` on the low-end PC with the upstream
-   Windows Vulkan build and a real model (see `tests/lowend/README.md`). Share
-   `result.json` and `log.txt`. Also still useful: `streambench.exe --bits 2`.
-2. Log results in `docs/predictions.md`.
-3. Build the gaps from `docs/upstream-gap-analysis.md` as patches against
-   upstream commit `0f8a467`, in this order: telemetry, persistent conditioning
-   cache, physical VRAM cap, prefix reuse, UI on `sd-server`.
-4. Cheap speed-ups to try next, each with a prediction first: merge the LoRA
-   into the GGUF before quantizing; larger VAE tiles; fewer threads vs more.
-5. The cloud session runs in the "ImageEdit" environment, which allows
-   Hugging Face downloads. It has no GPU and cannot run PowerShell.
+1. Owner (Sprint 1): on the laptop, run
+   `run-theory.ps1 -Device cpu -Lora Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16`
+   then the same without `-Device cpu` for Iris Xe graphics. Share
+   `result.json` and `log.txt`. Prediction: completes, ~2 GB held, 15–25 min.
+2. Sprint 3 (Claude): stop E first, because it is cheap: merge the LoRA into
+   the GGUF before quantizing; larger VAE tiles or a lighter decoder. Then
+   stop C: a chosen fill level with read-ahead, as a patch to upstream.
+3. Stop D needs a machine with a graphics card. Nobody has one in the loop yet.
+4. The cloud session runs in the "ImageEdit" environment (Hugging Face
+   allowed). No GPU, no PowerShell. Models are in `/home/user/models` and are
+   lost when the container is reclaimed; upstream is cloned and built at
+   `/home/user/upstream/sdcpp`. Measurement helper scripts (`memrun.py`,
+   `exp.sh`) were in the scratchpad and are saved under `tools/measure/`.
 
 ## Decisions
 

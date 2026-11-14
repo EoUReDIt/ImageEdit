@@ -78,3 +78,20 @@ Verdicts:
 - VAE decode with tiling took longer than one denoising step would suggest;
   larger tiles or less overlap are the obvious lever.
 - Rows 1–6 (VRAM, bus, async ring) are untested: this was CPU only.
+
+### 2026-11-14 — Sprint 2, memory (same cloud container, CPU only)
+
+Full write-up: `docs/sprints/sprint-2.md`. "Held" = anonymous memory (RssAnon);
+"borrowed" = file-backed pages (RssFile). Sampled 4x per second.
+
+| Test | Prediction (fixed first) | Measured | Verdict |
+|---|---|---|---|
+| Read in place, 256x256, 1 step: held during denoising | under 2 GB (was 7.8 GB) | 0.56 GB | confirmed |
+| Read in place, 512x512, 4 steps + LoRA: peak held | 1.5–2.5 GB (was 9.0 GB) | 1.87 GB | confirmed |
+| Same: total time | no worse than 628 s | 532 s | confirmed |
+| Same: output | — | byte-identical to Run 2 | — |
+| Under pressure (9.9 GB occupied): completes | yes | yes | confirmed |
+| Under pressure: denoising time | 100–250 s (was 23 s) | 25 s | wrong (too pessimistic) |
+
+Flags for read-in-place: `--backend cpu --params-backend te=cpu,diffusion=cpu,vae=cpu --mmap`.
+`--params-backend disk` does not map in place (peak held 7.8 GB, with or without `--mmap`).
