@@ -1,0 +1,115 @@
+# Sprint 3 journal: speed
+
+Goal: same cloud machine, same picture quality, from about 9 minutes to under
+2 minutes at 512x512. Working backward from the claim "hardware was never the
+problem, for speed too": the software must be doing more work than the picture
+needs. Each entry: theory, prediction (fixed before the run), result, verdict.
+
+Baseline: 532 s total = encoder 18 + denoising 354 (4 steps) + VAE decode 69 +
+loading and reference encoding. 1.9 GB held.
+
+Speed theories (full list in `docs/roadmap.md`): 1 reuse reference work across
+steps; 2 only compute the changed region; 3 reuse work between steps; 4 fewer
+steps; 5 work small then enlarge; 6 remove add-on overhead; 7 use the idle
+graphics chip; 8 save prompt-reading results to disk.
+
+Prior work is checked first: see `docs/prior-work.md`. Theories 1 and 2 are
+already proven by others at many steps; ours to test is whether they survive
+at 4 steps.
+
+## Entries
+
+### E1 — How much does the on-the-fly add-on cost? (theory 6)
+
+Run the same 4 steps without the add-on. The picture will be poor; only the
+timing matters.
+**Prediction:** denoising drops from 354 s to 250–290 s (the add-on costs 20–30%).
+**Result:** steps 2–4 took 69 s each without the add-on, against about 88 s
+each with it. Four warm steps = 276 s. Held memory peaked at 1.1 GB instead of
+1.9 GB.
+**Verdict:** confirmed. The on-the-fly add-on costs about 22% of image-making
+time (roughly 75 s per picture) and 0.8 GB. Folding it into the model file is
+worth doing.
+**Side finding:** this run's first step took 322 s and prompt-reading took
+128 s, because an earlier test had pushed the model files out of the system's
+memory and they had to be re-read from this machine's slow disk (about
+30 MB per second). A cold start costs minutes here. On a fast laptop SSD it
+should be seconds, but this is the price of the disk layer and needs measuring
+on the laptop.
+
+### E2 — Two steps instead of four (theory 4)
+
+No ready-made 2-step add-on exists, so run the 4-step add-on at 2 steps.
+**Prediction:** image-making takes about 176 s (half). Picture quality:
+unknown; my guess is visibly softer but recognisable.
+**Result:** image-making took 179 s. Total 350 s. The picture
+(`docs/results/2026-11-14-cpu-512-2step.png`) shows the correct edit and I
+cannot see a difference from the 4-step picture at normal viewing size.
+**Verdict:** time prediction confirmed. Quality was better than I guessed.
+
+### E3 — Turn the result into a picture in one piece instead of 9 tiles
+
+Run at 1 step to keep it short; this stage does not depend on step count.
+**Prediction:** this stage drops from 69 s to 25–40 s; held memory rises to
+3–4 GB during it.
+**Result:** 31 s; held memory peaked at 3.3 GB.
+**Verdict:** confirmed. A fair trade on a 16 GB machine.
+**Unplanned finding:** this run used a single step, and its picture
+(`docs/results/2026-11-14-cpu-512-1step.png`) is also a correct, clean edit.
+Whole run: 151 s (prompt-reading 18, image-making 80, picture conversion 31,
+the rest loading and reading the reference).
+
+## Scoreboard (512x512, one reference, same machine, same edit)
+
+| Settings | Total | Held memory |
+|---|---|---|
+| Sprint 1 settings, 4 steps | 628 s | 9.0 GB |
+| Read in place, 4 steps | 532 s | 1.9 GB |
+| Read in place, 2 steps | 350 s | 1.9 GB |
+| Read in place, 1 step, untiled conversion | 151 s | 3.3 GB |
+
+Caution: the test edit (change the words on a sign) is an easy one, and it is
+one picture. Fewer steps may fail on harder edits such as changing clothes,
+pose or background. E5 tests that before anyone relies on 1 or 2 steps.
+
+### E5 — Do 1 and 2 steps survive a harder edit? (theory 4)
+
+Prompt: "put a red knitted hat on the cat and change the background to a sunny
+beach", at 1, 2 and 4 steps.
+**Prediction:** 1 step shows visible flaws (smeared or half-changed areas);
+2 steps is acceptable; 4 steps is clean.
+**Result:** side by side in
+`docs/results/2026-11-14-e5-hat-beach-1-2-4-steps.png`.
+
+| Steps | Total | Image-making | What the picture shows |
+|---|---|---|---|
+| 1 | 158 s | 82 s | Hat and beach are there. Faint ghost of the cat's ears shows through the hat; background soft |
+| 2 | 242 s | 170 s | Same ghost ears, slightly fainter; background soft |
+| 4 | 392 s | 323 s | Clean: no ghosting, sharp background, natural hat |
+
+**Verdict:** partly confirmed. One step does show flaws, as predicted, though
+milder than I expected. Two steps is not clean either, which I got wrong. For
+edits that add or remove things, 4 steps is still the quality setting; 1–2
+steps is a fast preview. Fewer steps is therefore not the route to "same
+quality, faster" for real edits; the reference-reuse methods are.
+
+### H1–H4 — The edits the project is for: outfit, scene, pose, all together
+
+Subject: a made-up person (an AI-generated sample picture shipped with the
+engine; not a real individual). Outfit and scene references are generated by
+the model itself from a blank canvas. The pose reference is a hand-drawn stick
+figure with both arms raised. All at 2 steps, 512x512.
+
+| Test | Pictures given | Prediction (fixed before the run) |
+|---|---|---|
+| H1 outfit | subject + outfit | Works; small differences in garment detail |
+| H2 scene | subject + scene | Works |
+| H3 pose | subject + stick figure | Most likely to fail: may ignore the pose or paint the stick figure into the picture |
+| H4 all | subject + outfit + scene + pose | Gets 2 or 3 of the 3 changes right; about 9 minutes; held memory under 4 GB |
+
+In all four the face should stay recognisably the same person; H3 and H4 are
+where that is most at risk. Any failure is re-run at 4 steps to separate "too
+few steps" from "wrong approach".
+**Result:** queued behind E5.
+
+**Queued next:** E4 work at 384x384 then enlarge (theory 5); E6 fold the add-on into the model file (theory 6).

@@ -1,0 +1,26 @@
+name: streambench
+on:
+  push:
+    paths: ['runtime/streambench/**', '.github/workflows/streambench.yml']
+  workflow_dispatch:
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S runtime/streambench -B build -A x64
+      - run: cmake --build build --config Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: streambench-windows-x64
+          path: build/Release/streambench.exe
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y mesa-vulkan-drivers libvulkan1
+      - run: cmake -S runtime/streambench -B build && cmake --build build -j
+      - name: Correctness run on software Vulkan
+        run: |
+          ./build/streambench --dim 512 --tokens 256 --layer-mb 8 --no-assert | tee out.txt
+          grep -q "matches CPU : PASS" out.txt

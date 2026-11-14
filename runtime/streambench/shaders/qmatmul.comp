@@ -1,0 +1,52 @@
+#version 450
+// Fused on-GPU dequantize + matmul.
+// Weights stay bit-packed (2 or 4 bits per weight) in the ring slot and are
+// decoded through a codebook right before use, so only the compressed form
+// ever crosses the bus. One invocation = one output channel x TILE tokens;
+// each weight is decoded once and reused for the whole token tile.
+#define TILE 8
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+layout(push_constant) uniform PC {
+    uint dIn;     // input channels (multiple of 32/bits)
+    uint dOut;    // output channels
+    uint tBase;   // first token of this dispatch (multiple of TILE)
+    uint tCount;  // tokens in this dispatch (multiple of TILE)
+    uint wBase;   // word offset of this matrix inside the slot
+    uint bits;    // 2 or 4
+    uint pad0;
+    uint pad1;
+    float lut[16];
+} pc;
+
+layout(std430, set = 0, binding = 0) readonly buffer W { uint w[]; };
+layout(std430, set = 0, binding = 1) readonly buffer X { float x[]; };
+layout(std430, set = 0, binding = 2) writeonly buffer Y { float y[]; };
+
+void main() {
+    uint o = gl_GlobalInvocationID.x;
+    uint tile = gl_GlobalInvocationID.y;
+    if (o >= pc.dOut || tile * TILE >= pc.tCount) return;
+
+    uint cpw = 32u / pc.bits;            // codes per 32-bit word
+    uint mask = (1u << pc.bits) - 1u;
+    uint wordsPerRow = pc.dIn / cpw;
+    uint rowBase = pc.wBase + o * wordsPerRow;
+    uint t0 = pc.tBase + tile * TILE;
+
+    float acc[TILE];
+    for (int j = 0; j < TILE; ++j) acc[j] = 0.0;
+
+    for (uint wi = 0u; wi < wordsPerRow; ++wi) {
+        uint word = w[rowBase + wi];
+        uint i0 = wi * cpw;
+        for (uint k = 0u; k < cpw; ++k) {
+            float wv = pc.lut[(word >> (k * pc.bits)) & mask];
+            uint i = i0 + k;
+            for (int j = 0; j < TILE; ++j)
+                acc[j] += wv * x[(t0 + uint(j)) * pc.dIn + i];
+        }
+    }
+    for (int j = 0; j < TILE; ++j)
+        y[(t0 + uint(j)) * pc.dOut + o] = acc[j];
+}
