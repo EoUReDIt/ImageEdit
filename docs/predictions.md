@@ -5,6 +5,13 @@ conventional expectation. A measurement that beats it is a discovery; one that
 matches it confirms the conventional limit. Fill in "Measured" with the device
 and date. Never edit a prediction after its test has run.
 
+> **Every prediction in this ledger is an estimate, not a finding.** Like
+> pioneers working from a sketched map, we only know a route once we have
+> built it or travelled it. Arithmetic, papers and outside reviews tell us
+> where to look; only a measured run on the real machine confirms anything.
+> A prediction marked "withdrawn" was dropped before testing because its own
+> arithmetic did not hold; it stays visible so the record is honest.
+
 Reference case: 20B DiT, 60 blocks, 4 steps, 640x640 with one reference
 (3200 tokens), 2 GB discrete GPU, PCIe 3.0, 16–32 GB RAM.
 
@@ -21,6 +28,10 @@ Reference case: 20B DiT, 60 blocks, 4 steps, 640x640 with one reference
 | 9 | VAE decode + sharpen | 5–10 s | not yet estimated | — |
 | 10 | End to end | 75–115 s | ~7–20 min | — |
 | 11 | Image quality at ~2 bpw is usable | yes | visible degradation below ~4 bpw | — |
+
+**Withdrawn before testing (2026-11-14, after outside review 1):** rows 6 and
+10. Their targets need ~6 TFLOPS sustained; the same table says a 2 GB-class
+card gives 0.5–1.5. The conventional column (7–20 min) is the better estimate.
 
 Rows 1–6 are testable with `runtime/streambench`. All rows are testable with a
 real model through `tests/lowend/run-theory.ps1` (upstream stable-diffusion.cpp).
@@ -95,3 +106,71 @@ Full write-up: `docs/sprints/sprint-2.md`. "Held" = anonymous memory (RssAnon);
 
 Flags for read-in-place: `--backend cpu --params-backend te=cpu,diffusion=cpu,vae=cpu --mmap`.
 `--params-backend disk` does not map in place (peak held 7.8 GB, with or without `--mmap`).
+
+## Claim 3 split into three (owner decision, 2026-11-14)
+
+Claim 3 was "the hardware was never the problem, for speed too". After outside
+review 1 (`docs/reviews/2026-11-14-gemini-concept-review.md`) it is tested as
+three separate claims, because "the hardware" means three different machines.
+
+| # | Claim | Where it is tested | Our estimate now | Status |
+|---|---|---|---|---|
+| 3a | A desktop runs the 20B model (or larger) at good quality in a usable time | A desktop with a graphics card, not yet available | Unknown: no measurement on a graphics card yet | open |
+| 3b | The current laptop (i5-1135G7, 16 GB, Iris Xe, Windows) gives a good multi-reference edit in under 2 minutes | The owner's laptop | Unlikely with 20B at 4 steps (8–25 min estimated); possible with a smaller model such as FLUX.2 [klein] 4B | open |
+| 3c | A cloud API gives 20B quality in seconds, behind a simple local screen | A hosted Qwen-Image-Edit API with the owner's key | Likely (~10–15 s per the review); cost and privacy to check | open, previously parked |
+
+Evidence so far for 3b on the cloud machine (4 cores, Linux): clean 4-step
+512x512 edit = 392 s (E5). Under 120 s needs ~3.3x more speed; known 20B
+tricks (fold add-on ~1.2x, reference pruning ~1.3x) total ~1.5x.
+
+## Open predictions after outside review 1 (fixed before any of these runs)
+
+Two predictions per test where the reviewer gave one: ours and Gemini's. Both
+are estimates.
+
+### Step 1 — H1–H4 on the cloud machine, 4 steps, 512x512, Q2_K, untiled conversion
+
+Changes from the earlier H plan: 4 steps instead of 2 (E5 showed 2 steps
+ghosts); H3 run three ways; H4 also run with three pictures (the model is
+reported to be reliable with 2–3 references only).
+
+| Test | Pictures | Our prediction | Gemini's prediction | Measured |
+|---|---|---|---|---|
+| H1 outfit | subject + outfit | Works; garment approximate; face kept. ~10 min total | Succeeds at 4 steps | — |
+| H2 scene | subject + scene | Works; face kept. ~10 min | Succeeds at 4 steps | — |
+| H3a pose, stick figure | subject + hand-drawn stick figure | Pose partly followed or stick figure painted in. ~10 min | Struggles | — |
+| H3b pose, keypoint map | subject + coloured skeleton | Pose followed better than H3a | (not tested in review) | — |
+| H3c pose, photo | subject + generated photo of a person in the pose | Pose followed; risk of face mixing with the pose person | Much better than stick figure | — |
+| H4 all four | subject + outfit + scene + stick figure | 1–2 of 3 changes right; face drifts. ~15 min; held < 4 GB | Reveals whether Q2_K blurs the face | — |
+| H4' three | subject + outfit + scene | 2 of 2 changes right; face kept. ~12 min | (not tested in review) | — |
+
+### Step 2 — laptop, CPU, 4 steps, 512x512 (owner runs)
+
+| Measure | Our prediction (Sprint 2) | Gemini's prediction | Measured |
+|---|---|---|---|
+| Completes | yes | yes | — |
+| Program's own memory (Task Manager) | ~2 GB | 2.0–3.5 GB | — |
+| Warm run | 15–25 min | 8–14 min | — |
+| Cold run (after reboot) | not predicted | 12–18 min | — |
+
+### Step 3 — laptop, Iris Xe graphics chip (Vulkan), same edit
+
+Check first: Task Manager > Performance > GPU must say "Iris Xe". "UHD
+Graphics" means one memory stick, and the test result would not represent
+Iris Xe.
+
+| Our prediction | Gemini's prediction | Measured |
+|---|---|---|
+| Runs, but no faster than CPU, or fails for lack of shared memory | Hits the 8 GB shared limit, or 1.5–2x faster than CPU (~4–7 min) | — |
+
+### Step 4 — E6, fold the add-on into the model file
+
+| Our prediction | Gemini's prediction | Measured |
+|---|---|---|
+| Image-making ~22% faster, 0.8 GB less held (from E1) | 25–35% total time saved (with smaller references), ~0.8 GB less | — |
+
+### Step 5 — FLUX.2 [klein] 4B on H1–H4 (laptop)
+
+| Our prediction | Gemini's prediction | Measured |
+|---|---|---|
+| Under 2 min per edit on the laptop at 512x512; face likeness weaker than 20B at 4 steps | Under 2 min; sharper than 20B at 1 step | — |

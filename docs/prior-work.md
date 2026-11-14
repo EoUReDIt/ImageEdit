@@ -42,3 +42,23 @@ a 4-step model on a processor. That gap is what we still have to test.
 - [FreqCa: Accelerating Diffusion Models via Frequency-Aware Caching](https://arxiv.org/html/2510.08669v1)
 - [Qwen-Image-Edit-2511-Lightning](https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning)
 - [Can I Run Qwen-Image 2.1 Locally?](https://openclawdc.com/blog/can-i-run-qwen-image-2-1-locally/)
+
+## Update after outside review 1 (2026-11-14)
+
+- **Theory 2 parked.** RegionE and SpotEdit skip unchanged regions. In scene
+  and pose swaps (H2–H4) almost the whole picture changes, so there is little
+  to skip.
+- **Theory 1b (ToPi) is the first patch to build.** It targets reference
+  pictures, which is our multi-reference case. The reviewer also named
+  "ToDoPro (Oct 2026)"; a search found no such paper, so it is treated as
+  unverified. A related June 2026 paper exists:
+  [Keep The Essentials: token dropping](https://arxiv.org/pdf/2606.23682).
+- **New limit found:** Qwen-Image-Edit-2511 is reported reliable with only 2–3
+  reference pictures ([UniRef-Image-Edit](https://arxiv.org/html/2602.14186v1)).
+  H4 uses four.
+- **Pose input:** since the 2509 release the model advertises built-in
+  keypoint-map (pose skeleton) support
+  ([model card](https://huggingface.co/Qwen/Qwen-Image-Edit-2509)).
+- **Smaller-model route for claim 3b:** FLUX.2 [klein] 4B, Apache 2.0,
+  multi-reference editing
+  ([BFL](https://bfl.ai/blog/flux2-klein-towards-interactive-visual-intelligence)).

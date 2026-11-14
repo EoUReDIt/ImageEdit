@@ -39,13 +39,15 @@ file on disk. The system keeps in memory whatever fits and drops the rest.
 *Status: confirmed on the processor path.* Memory truly held fell from 9.0 GB
 to 1.9 GB at full size, with an identical image and a faster run.
 
-**C. Balanced fill.** Instead of leaving it to the system, the program decides
+**C. Balanced fill.** *(Parked 2026-11-14: the system's own caching held up
+in Sprint 2; revisit only if the laptop shows thrashing.)* Instead of leaving it to the system, the program decides
 how full each layer should be (for example 60–70% of system memory), and
 fetches the next block from disk while working on the current one.
 *Status: open.* Needs new code. First evidence comes from the memory-pressure
 test in Sprint 2.
 
-**D. Three layers on graphics hardware.** Graphics memory holds only the
+**D. Three layers on graphics hardware.** *(One Iris Xe test on the laptop
+first; Windows limits a built-in graphics chip to half of system memory.)* Graphics memory holds only the
 blocks in use, fed from system memory, fed from disk. On built-in graphics
 (shared memory), let the graphics chip work on the mapped file directly so
 there is no second copy.
@@ -53,8 +55,10 @@ there is no second copy.
 are unmeasured; nobody on the project has tested on a graphics card yet.
 
 **E. Load less.** Fold the 4-step add-on into the model file ahead of time,
-use a lighter picture decoder, shrink reference pictures, use a smaller
-prompt-reading model.
+use a lighter picture decoder, shrink reference pictures, use a more
+compressed copy of the same prompt-reading model. (Correction, 2026-11-14: a
+*different, smaller* prompt-reader will not work, because the image model was
+trained on what Qwen2.5-VL-7B produces.)
 *Status: open.* Each is a separate small experiment.
 
 **F. Go faster.** Fewer tokens per picture, reuse work between steps, save the
@@ -73,8 +77,18 @@ each layer is and what the machine is doing.
 2. The problem was access to expertise: the fixes exist but are locked behind
    settings and source code. *Supported so far: the Sprint 2 fix was an
    existing, undocumented combination of settings.*
-3. Claim 1 holds for speed too. This can only come true by using fewer
-   weights, fewer tokens or fewer passes per picture.
+3. Claim 1 holds for speed too. Split into three on 2026-11-14 after outside
+   review 1, because "the hardware" means three different machines:
+   - **3a Desktop:** the 20B model, or larger, at good quality in a usable
+     time on a desktop with a graphics card. *Open: no graphics card tested.*
+   - **3b Current laptop:** a good multi-reference edit in under 2 minutes on
+     the i5-1135G7. *Open. Unlikely with 20B at 4 steps; a smaller model
+     (FLUX.2 [klein] 4B) is the candidate route.*
+   - **3c Cloud API:** 20B quality in seconds through a hosted API behind the
+     same simple screen. *Open; previously parked, now back on the map.*
+
+All predictions are estimates. We confirm a route only by building it or
+travelling it. Ledger: `docs/predictions.md`.
 
 ## Speed theories (stop F, expanded)
 

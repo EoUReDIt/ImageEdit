@@ -1,19 +1,23 @@
 # Handoff — read this file only; open others when a step needs them
 
-Updated after every experiment. Last update: 2026-11-14, Sprint 3 after E3.
+Updated after every experiment. Last update: 2026-11-14, after outside review 1 and the claim 3 split.
 
 ## Resume in one minute
 
 - **Project:** ImageEdit. Run a 20B image-editing model (Qwen-Image-Edit-2511)
   on ordinary PCs. One subject photo + tagged references + prompt -> one image.
-- **Branch:** `claude/compassionate-fermi-1dzo7z` (only branch to push to).
+- **Branch:** `claude/sweet-knuth-4ql77j` (work moved here from
+  `claude/compassionate-fermi-1dzo7z`, which is merged in and now frozen;
+  see `HYGIENE.md` for cleanup).
 - **Engine:** upstream stable-diffusion.cpp, unmodified so far. No patches yet.
 - **Owner:** non-technical explorer. Write reports in plain language. Method:
   start from the wanted conclusion -> theory -> solution; fix a prediction
   before every test; log it in `docs/predictions.md`. If you have a question,
   first explain why, the background, and the theory at stake.
 - **Owner's claims being tested:** (1) hardware was never the problem;
-  (2) the problem was access to expertise; (3) claim 1 also holds for speed.
+  (2) the problem was access to expertise; (3) claim 1 also holds for speed,
+  split into 3a desktop (20B or larger), 3b current laptop, 3c cloud API.
+- **Predictions are estimates.** We confirm only by building or travelling.
 
 ## Where things stand
 
@@ -28,9 +32,19 @@ Best known settings (CPU):
 plus the Lightning 4-step LoRA. Baseline at 512x512, one reference:
 532 s total (encoder 18, denoising 354, VAE decode 69), 1.9 GB held.
 Fastest so far: 1 step, no `--vae-tiling`: 151 s, 3.3 GB held, correct on an
-easy edit only. Step count on harder edits is being tested (E5).
+easy edit only. E5: on a harder edit 1–2 steps leave ghosting; 4 steps
+(392 s) is the quality setting.
 
 ## Next action
+
+Order after outside review 1 (`docs/reviews/2026-11-14-gemini-concept-review.md`):
+1. H1–H4 at 4 steps on the cloud machine (H3 three ways, H4 also with three pictures).
+2. Laptop CPU run, warm and cold (owner).
+3. One Iris Xe Vulkan test (owner; check the chip says "Iris Xe").
+4. E6: fold the add-on into the model file.
+5. FLUX.2 [klein] 4B on the same edits.
+
+Predictions for all five are in `docs/predictions.md`.
 
 See the last entry of `docs/sprints/sprint-3.md`: it always names the
 experiment in flight and the next one queued.
@@ -52,6 +66,9 @@ experiment in flight and the next one queued.
 
 ## Files
 
+- `CONCEPT-REVIEW-BRIEF.md` — self-contained brief for outside reviewers.
+- `docs/reviews/` — outside reviews, with our check of each.
+- `HYGIENE.md` — branch cleanup guide and questions for the owner.
 - `docs/prior-work.md` — which theories others already proved; check and
   extend it before testing any new theory.
 - `docs/roadmap.md` — thesis, three layers, stops A–G, speed theories.
