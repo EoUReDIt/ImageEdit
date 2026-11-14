@@ -78,7 +78,20 @@ Prompt: "put a red knitted hat on the cat and change the background to a sunny
 beach", at 1, 2 and 4 steps.
 **Prediction:** 1 step shows visible flaws (smeared or half-changed areas);
 2 steps is acceptable; 4 steps is clean.
-**Result:** in flight.
+**Result:** side by side in
+`docs/results/2026-11-14-e5-hat-beach-1-2-4-steps.png`.
+
+| Steps | Total | Image-making | What the picture shows |
+|---|---|---|---|
+| 1 | 158 s | 82 s | Hat and beach are there. Faint ghost of the cat's ears shows through the hat; background soft |
+| 2 | 242 s | 170 s | Same ghost ears, slightly fainter; background soft |
+| 4 | 392 s | 323 s | Clean: no ghosting, sharp background, natural hat |
+
+**Verdict:** partly confirmed. One step does show flaws, as predicted, though
+milder than I expected. Two steps is not clean either, which I got wrong. For
+edits that add or remove things, 4 steps is still the quality setting; 1–2
+steps is a fast preview. Fewer steps is therefore not the route to "same
+quality, faster" for real edits; the reference-reuse methods are.
 
 ### H1–H4 — The edits the project is for: outfit, scene, pose, all together
 
