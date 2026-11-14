@@ -165,6 +165,13 @@ Iris Xe.
 
 ### Step 4 — E6, fold the add-on into the model file
 
+Method (cloud machine, no extra download): the engine's convert mode merges
+the add-on while rewriting the Q2_K file. This unpacks already-compressed
+weights and compresses them again, so a small quality loss is possible; the
+clean route is merging into the full-precision file first (needs ~40 GB disk).
+Added prediction: picture visibly the same as the add-on-at-run-time version
+on H1 and E5; if not, double compression is the suspect.
+
 | Our prediction | Gemini's prediction | Measured |
 |---|---|---|
 | Image-making ~22% faster, 0.8 GB less held (from E1) | 25–35% total time saved (with smaller references), ~0.8 GB less | — |
