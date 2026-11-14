@@ -7,4 +7,4 @@ python3 "$here/memrun.py" /home/user/exp/$name ./build/bin/sd-cli \
  --llm ${LLM:-$M/Qwen2.5-VL-7B-Instruct.Q3_K_S.gguf} --llm_vision $M/Qwen2.5-VL-7B-Instruct.mmproj-Q8_0.gguf \
  --backend cpu --params-backend "$pb" --steps ${STEPS:-1} --cfg-scale 1.0 --sampling-method euler --flow-shift 3 \
  -W ${SIZE:-256} -H ${SIZE:-256} --model-args qwen_image_zero_cond_t=true -s 42 \
- -p "${PROMPT:-change the text on the sign to 'hello'}" -r assets/flux/flux1-dev-q8_0.png -o /home/user/exp/$name/result.png -v "$@"
+ -p "${PROMPT:-change the text on the sign to 'hello'}" -r ${REF:-assets/flux/flux1-dev-q8_0.png} -o /home/user/exp/$name/result.png -v "$@"
