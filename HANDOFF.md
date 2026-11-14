@@ -1,103 +1,67 @@
-# Handoff
+# Handoff — read this file only; open others when a step needs them
 
-Updated: 2026-11-14. Update this file at every pause.
+Updated after every experiment. Last update: 2026-11-14, Sprint 3 started.
 
-Project: ImageEdit — local image-editing app for low-end PCs
-Repo: github.com/EoUReDIt/ImageEdit
-Branch: claude/compassionate-fermi-1dzo7z (develop here only)
+## Resume in one minute
 
-## Goal
+- **Project:** ImageEdit. Run a 20B image-editing model (Qwen-Image-Edit-2511)
+  on ordinary PCs. One subject photo + tagged references + prompt -> one image.
+- **Branch:** `claude/compassionate-fermi-1dzo7z` (only branch to push to).
+- **Engine:** upstream stable-diffusion.cpp, unmodified so far. No patches yet.
+- **Owner:** non-technical explorer. Write reports in plain language. Method:
+  start from the wanted conclusion -> theory -> solution; fix a prediction
+  before every test; log it in `docs/predictions.md`. If you have a question,
+  first explain why, the background, and the theory at stake.
+- **Owner's claims being tested:** (1) hardware was never the problem;
+  (2) the problem was access to expertise; (3) claim 1 also holds for speed.
 
-One subject photo (identity only), several reference images each tagged
-scene / outfit / pose, an optional prompt, one output image. Simple UI. Run a
-~20B editing model (Qwen-Image-Edit-2511 class) locally in <= 1.8 GB VRAM via a
-custom C++/Vulkan streaming runtime. The owner tests on a low-end Windows PC.
+## Where things stand
 
-## Method
+| Sprint | Goal | Status |
+|---|---|---|
+| 1 | Laptop run (i5-1135G7, 16 GB, Iris Xe, Windows) | Owner travelling; not run yet |
+| 2 | Memory down | Done: 9.0 GB -> 1.9 GB held. `docs/sprints/sprint-2.md` |
+| 3 | Speed: ~9 min -> under 2 min on the same cloud machine | In progress. Journal: `docs/sprints/sprint-3.md` |
 
-Discovery-based: build to the theory first, then test, then compare against the
-arithmetic baseline in `docs/predictions.md`. The arithmetic validates results;
-it does not veto building. Predictions are fixed before each test.
+Best known settings (CPU):
+`--backend cpu --params-backend te=cpu,diffusion=cpu,vae=cpu --mmap --steps 4 --cfg-scale 1 --sampling-method euler --flow-shift 3 --vae-tiling --model-args qwen_image_zero_cond_t=true`
+plus the Lightning 4-step LoRA. Baseline at 512x512, one reference:
+532 s total (encoder 18, denoising 354, VAE decode 69), 1.9 GB held.
 
-## Done
+## Next action
 
-- `runtime/streambench/` — Vulkan benchmark of the core idea: bit-packed
-  weights in RAM, two-slot VRAM ring fed by an async transfer queue, fused
-  on-GPU dequantize + matmul, projection and budget assertions, JSON output.
-  Verified on software Vulkan (llvmpipe): GPU result matches a CPU reference
-  for 2-bit and 4-bit, at hidden size 3072.
-- `docs/runtime-design.md` — budget arithmetic, verdict on each of the five
-  planned optimizations, build order, model swapping, legal summary.
-- `docs/predictions.md` — theory target vs arithmetic baseline vs measured, per claim.
-- `docs/upstream-gap-analysis.md` — each theory point checked against
-  stable-diffusion.cpp; most already exist upstream; five gaps listed.
-- `tests/lowend/run-theory.ps1` — runs the theory configuration on upstream and
-  records time and peak VRAM. Untested.
-- `.github/workflows/streambench.yml` — builds `streambench.exe` for Windows
-  and runs a correctness check on Linux.
+See the last entry of `docs/sprints/sprint-3.md`: it always names the
+experiment in flight and the next one queued.
 
-## Not done / not verified
+## Cloud session facts
 
-- Nothing has run on a real GPU. The only real speed numbers are CPU-only.
-- No real model is loaded: no GGUF parser, no K-quant layouts, no attention,
-  no VAE, no encoder phase, no UI.
-- The Windows build has not been run on a real machine.
+- Environment "ImageEdit": Hugging Face allowed. 4 CPU cores, 15 GB RAM, no
+  GPU, no PowerShell. Container is disposable.
+- If the container was reclaimed, rebuild in this order:
+  1. `git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/leejet/stable-diffusion.cpp /home/user/upstream/sdcpp`
+     then `cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j4 --target sd-cli`
+     (results so far are from commit `0f8a467`).
+  2. Models into `/home/user/models` (exact names and repos: results log in
+     `docs/predictions.md`; download host is `us.aws.cdn.hf.co`).
+  3. Measure with `tools/measure/exp.sh <name> <params-backend> [flags]`
+     (wraps `memrun.py`; env vars SIZE, STEPS, PROMPT, LLM). Output lands in
+     `/home/user/exp/<name>/` as `log.txt`, `mem.json`, `result.png`.
+- Test input image: `assets/flux/flux1-dev-q8_0.png` in the upstream repo.
 
-## Key findings so far
+## Files
 
-- Sprint 2 (memory): reading weights in place from the model file
-  (`--backend cpu --params-backend ...=cpu --mmap`) cut peak held memory from
-  9.0 GB to 1.9 GB at 512x512 / 4 steps, 628 s -> 532 s, identical output, and
-  it still ran at normal speed with 9.9 GB of RAM occupied by another process.
-  `--params-backend disk` does NOT do this. See `docs/sprints/sprint-2.md`.
-- Owner's guiding rule: fill graphics memory and system memory only to a
-  balanced point, leave room for the OS, disk as overflow. Thesis and stops A–G
-  are in `docs/roadmap.md`. Reports must be written for a non-technical reader.
-
-- The full pipeline works end to end on upstream stable-diffusion.cpp with the
-  2-bit model and the 4-step LoRA. Measured in the cloud container on 4 CPU
-  cores, no GPU: 512x512, 4 steps, one reference = 628 s total (encoder 30 s,
-  denoising 449 s, VAE decode 92 s), 9.0 GB peak memory, correct edit.
-  Details in `docs/predictions.md`; images in `docs/results/`.
-- The earlier arithmetic baseline was too pessimistic (it counted all 20B
-  parameters per token; each token uses about half).
-- The owner's test PC is an i5-1135G7 laptop, 16 GB RAM, Intel Iris Xe
-  integrated graphics. No PCIe bus, no dedicated VRAM: the binding limit is
-  16 GB RAM, and theory points 2–3 (bus compression, async ring) cannot be
-  tested on it. They still need a discrete-GPU machine.
-- Model files are verified and listed in `docs/predictions.md` (results log).
-  They live in `/home/user/models` in the cloud container (lost when the
-  container is reclaimed; re-download from Hugging Face).
-
-## Next steps
-
-1. Owner (Sprint 1): on the laptop, run
-   `run-theory.ps1 -Device cpu -Lora Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16`
-   then the same without `-Device cpu` for Iris Xe graphics. Share
-   `result.json` and `log.txt`. Prediction: completes, ~2 GB held, 15–25 min.
-2. Sprint 3 (Claude): stop E first, because it is cheap: merge the LoRA into
-   the GGUF before quantizing; larger VAE tiles or a lighter decoder. Then
-   stop C: a chosen fill level with read-ahead, as a patch to upstream.
-3. Stop D needs a machine with a graphics card. Nobody has one in the loop yet.
-4. The cloud session runs in the "ImageEdit" environment (Hugging Face
-   allowed). No GPU, no PowerShell. Models are in `/home/user/models` and are
-   lost when the container is reclaimed; upstream is cloned and built at
-   `/home/user/upstream/sdcpp`. Measurement helper scripts (`memrun.py`,
-   `exp.sh`) were in the scratchpad and are saved under `tools/measure/`.
-
-## Decisions
-
-- Extend stable-diffusion.cpp (owner's choice), not a from-scratch runtime.
-- Upstream changes are kept as patches in this repo against a pinned commit.
-- Benchmark before runtime: the time target is unproven, so measure first.
-- volk + fetched Vulkan headers, SPIR-V committed: builds without the Vulkan SDK.
-- Dispatches are chunked (256 tokens) to stay under the Windows 2 s GPU watchdog.
-- Runtime will be model-agnostic (loads user-supplied files); no bundled
-  third-party fine-tunes; consent prompt for photos of other people.
+- `docs/roadmap.md` — thesis, three layers, stops A–G, speed theories.
+- `docs/predictions.md` — every prediction and result.
+- `docs/sprints/` — one plain-language report per sprint.
+- `docs/upstream-gap-analysis.md` — what upstream already does vs the theory.
+- `tests/lowend/run-theory.ps1` — owner's laptop test (untested on Windows).
+- `runtime/streambench/` — standalone GPU bus/arithmetic benchmark (parked).
 
 ## Gotchas
 
-- streambench's projection is a lower bound (linear layers only, untuned shader).
-- On integrated GPUs and llvmpipe, "VRAM" is system RAM and the bus figure is not PCIe.
-- Peak-TFLOPS figures for specific cards in the design doc are from memory.
-- Earlier direction (hosted API key front end on Perchance) is parked, not dropped.
+- `--params-backend disk` keeps a full private copy in memory; only
+  `cpu` + `--mmap` reads in place.
+- A background task's exit code 0 does not mean its commands worked; check outputs.
+- Reading in place is CPU-only; graphics chips still get a copy (stop D).
+- Parked, not dropped: hosted API-key front end; model-swap and legal notes
+  are in `docs/runtime-design.md`.

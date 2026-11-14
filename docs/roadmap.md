@@ -67,11 +67,31 @@ pictures (scene, outfit, pose), a prompt, one result. A gauge shows how full
 each layer is and what the machine is doing.
 *Status: open.*
 
+## Owner's claims under test
+
+1. The hardware was never the problem. *Memory: supported (Sprint 2). Speed: under test (Sprint 3).*
+2. The problem was access to expertise: the fixes exist but are locked behind
+   settings and source code. *Supported so far: the Sprint 2 fix was an
+   existing, undocumented combination of settings.*
+3. Claim 1 holds for speed too. This can only come true by using fewer
+   weights, fewer tokens or fewer passes per picture.
+
+## Speed theories (stop F, expanded)
+
+1. The reference picture is recomputed at every step though it never changes.
+2. The whole picture is recomputed when only a region changes.
+3. Every step runs in full even when little changes between steps.
+4. Four steps may be more than needed.
+5. Work is done at full size that could be done small, then enlarged.
+6. The 4-step add-on is applied on the fly at every step.
+7. The built-in graphics chip sits idle during a processor run.
+8. Reading the prompt and pictures is repeated on every run.
+
 ## Sprints
 
 | Sprint | Goal | Who | Status |
 |---|---|---|---|
 | 1 | Does it run on the low-end laptop at all, and how long does it take? | Owner | Waiting for the laptop test |
 | 2 | Bring memory down | Claude | Done, see `docs/sprints/sprint-2.md` |
-| 3 | Balanced fill (stop C) and load less (stop E) | Claude | Not started |
-| 4 | Speed (stop F) | Both | Not started |
+| 3 | Speed (stop F): about 9 min to under 2 min | Claude | In progress, see `docs/sprints/sprint-3.md` |
+| 4 | Balanced fill (stop C) and load less (stop E) | Claude | Not started |
