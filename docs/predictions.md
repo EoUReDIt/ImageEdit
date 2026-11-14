@@ -155,7 +155,7 @@ skeleton is the pose input that works, so H4 is also run with it.
 
 | Test | Pictures | Our prediction | Measured |
 |---|---|---|---|
-| H4k four, skeleton | subject + outfit + scene + skeleton | Better than H4: no figure painted in; 2 of 3 changes right (four pictures is above the reported 2–3 limit). ~15 min | — |
+| H4k four, skeleton | subject + outfit + scene + skeleton | Better than H4: no figure painted in; 2 of 3 changes right (four pictures is above the reported 2–3 limit). ~15 min | **Fails, 0 of 3 for her.** Outfit and pose are applied correctly, but to the mannequin, which becomes a man; she is unchanged; no beach. 1459 s (24 min). Ours wrong. Finding: the model treats the mannequin in the outfit picture as a second person |
 
 Added after H4p, before the run: **H4chain**, one change per pass, each pass
 with two pictures (the case that works): pass 1 = H1 result is reused (outfit);
@@ -192,7 +192,19 @@ weights and compresses them again, so a small quality loss is possible; the
 clean route is merging into the full-precision file first (needs ~40 GB disk).
 Added prediction: picture visibly the same as the add-on-at-run-time version
 on H1 and E5; if not, double compression is the suspect.
-Runs: E6a = E5's hat-and-beach edit (compare image-making with E5's 323 s);
+**Result (2026-11-14): could not run on this machine.** Folding the add-on into
+a compressed file makes the engine unpack the whole model to full precision in
+memory first (38 GB); this machine has 15 GB. Folding has to be done on a
+machine with ~48 GB of memory, or offline from the full-precision file.
+
+**Substitute test E6' (prediction fixed before the run):** fold the add-on in
+at load time (`--lora-apply-mode immediately`) instead of at every step. It
+measures the speed gain of a folded model, but not its memory, because the
+folded weights become a private copy. Prediction: E5's hat edit image-making
+~260 s (from 323 s, about 20% faster); held memory rises to 8–9 GB; loading
+takes 1–3 min longer.
+
+Planned runs (not done): E6a = E5's hat-and-beach edit (compare image-making with E5's 323 s);
 E6b = H1 (compare with H1's 602 s). Prediction: both ~20% faster image-making,
 held memory ~0.8 GB lower during image-making.
 
