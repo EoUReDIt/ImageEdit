@@ -2,7 +2,8 @@
 # hrun.sh <name> "<prompt>" <ref1> [ref2 ...]
 # Multi-reference run at the quality settings: 512x512, 4 steps, Lightning
 # 4-step add-on, read in place, untiled picture conversion.
-# Env: SIZE, STEPS, DIT (model file), NOLORA=1 (add-on already folded in).
+# Env: SIZE, STEPS, DIT (model file), NOLORA=1 (add-on already folded in),
+# EXTRA (more sd-cli flags, unquoted).
 here="$(cd "$(dirname "$0")" && pwd)"; name=$1; prompt=$2; shift 2
 M=/home/user/models; refs=(); for r in "$@"; do refs+=(-r "$r"); done
 lora="<lora:Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16:1>"; [ -n "$NOLORA" ] && lora=""
@@ -14,4 +15,4 @@ python3 "$here/memrun.py" /home/user/exp/$name ./build/bin/sd-cli \
  --steps ${STEPS:-4} --cfg-scale 1.0 --sampling-method euler --flow-shift 3 \
  -W ${SIZE:-512} -H ${SIZE:-512} --model-args qwen_image_zero_cond_t=true -s 42 \
  -p "$prompt$lora" "${refs[@]}" \
- -o /home/user/exp/$name/result.png -v
+ $EXTRA -o /home/user/exp/$name/result.png -v
