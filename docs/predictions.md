@@ -22,8 +22,8 @@ Reference case: 20B DiT, 60 blocks, 4 steps, 640x640 with one reference
 | 10 | End to end | 75–115 s | ~7–20 min | — |
 | 11 | Image quality at ~2 bpw is usable | yes | visible degradation below ~4 bpw | — |
 
-Rows 1–6 are testable today with `runtime/streambench`. Rows 7–11 need the
-real runtime.
+Rows 1–6 are testable with `runtime/streambench`. All rows are testable with a
+real model through `tests/lowend/run-theory.ps1` (upstream stable-diffusion.cpp).
 
 ## Results log
 

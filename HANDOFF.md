@@ -29,6 +29,10 @@ it does not veto building. Predictions are fixed before each test.
 - `docs/runtime-design.md` — budget arithmetic, verdict on each of the five
   planned optimizations, build order, model swapping, legal summary.
 - `docs/predictions.md` — theory target vs arithmetic baseline vs measured, per claim.
+- `docs/upstream-gap-analysis.md` — each theory point checked against
+  stable-diffusion.cpp; most already exist upstream; five gaps listed.
+- `tests/lowend/run-theory.ps1` — runs the theory configuration on upstream and
+  records time and peak VRAM. Untested.
 - `.github/workflows/streambench.yml` — builds `streambench.exe` for Windows
   and runs a correctness check on Linux.
 
@@ -48,18 +52,20 @@ doc. This is an estimate until streambench runs on real hardware.
 
 ## Next steps
 
-1. Owner: run `streambench.exe --bits 2 --json streambench-result.json` on the
-   low-end PC and share the output (see `runtime/streambench/README.md`).
-2. Get a mid-tier GPU result too. The cloud session has no GPU.
-3. Log both results in `docs/predictions.md`.
-4. Build on, per the theory, without waiting for the results: GGUF loader +
-   K-quant dequant shaders streaming real tensors through the ring; then one
-   real DiT block checked against a reference; then the encoder phase with
-   key/value prefix cache; then the UI.
-5. Open choice: extend stable-diffusion.cpp/ggml or write from scratch.
+1. Owner: run `tests/lowend/run-theory.ps1` on the low-end PC with the upstream
+   Windows Vulkan build and a real model (see `tests/lowend/README.md`). Share
+   `result.json` and `log.txt`. Also still useful: `streambench.exe --bits 2`.
+2. Log results in `docs/predictions.md`.
+3. Build the gaps from `docs/upstream-gap-analysis.md` as patches against
+   upstream commit `0f8a467`, in this order: telemetry, persistent conditioning
+   cache, physical VRAM cap, prefix reuse, UI on `sd-server`.
+4. The cloud session cannot reach Hugging Face, so it cannot run a real model.
+   Patches can be compiled there but not exercised until that is allowed.
 
 ## Decisions
 
+- Extend stable-diffusion.cpp (owner's choice), not a from-scratch runtime.
+- Upstream changes are kept as patches in this repo against a pinned commit.
 - Benchmark before runtime: the time target is unproven, so measure first.
 - volk + fetched Vulkan headers, SPIR-V committed: builds without the Vulkan SDK.
 - Dispatches are chunked (256 tokens) to stay under the Windows 2 s GPU watchdog.
