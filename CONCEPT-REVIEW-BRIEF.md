@@ -200,12 +200,25 @@ Unplanned: the 1-step picture was also a correct, clean edit. Whole run 151 s
 | Read in place, 2 steps | 350 s | 1.9 GB |
 | Read in place, 1 step, untiled conversion | **151 s** | 3.3 GB |
 
-**Caution:** the test edit (sign text) is easy, and it is one picture.
+**Caution:** the test edit (sign text) is easy, and it is one picture. E5
+below shows 1–2 steps leave ghosting on a harder edit.
 
-**Queued / in flight (no results yet):**
-- **E5** — harder edit ("put a red knitted hat on the cat and change the
-  background to a sunny beach") at 1, 2, 4 steps. Prediction: 1 step flawed,
-  2 acceptable, 4 clean.
+**E5 — do 1 and 2 steps survive a harder edit? (theory 4)**
+Prompt: "put a red knitted hat on the cat and change the background to a sunny
+beach". Prediction: 1 step flawed, 2 acceptable, 4 clean.
+
+| Steps | Total | Image-making | Picture |
+|---|---|---|---|
+| 1 | 158 s | 82 s | Hat and beach present; faint ghost of cat's ears through the hat; soft background |
+| 2 | 242 s | 170 s | Same ghost ears, slightly fainter; soft background |
+| 4 | 392 s | 323 s | Clean: no ghosting, sharp background, natural hat |
+
+Verdict: **partly confirmed.** 1 step flawed (milder than expected); 2 steps
+also not clean (prediction wrong). For edits that add or remove things, 4 steps
+remains the quality setting; 1–2 steps is a fast preview. Fewer steps is not the
+route to "same quality, faster"; reference-reuse methods (section 5) are.
+
+**Queued (no results yet):**
 - **H1–H4** — the edits the project is for, 2 steps, 512². Subject is an
   AI-generated sample person (not a real individual).
 
