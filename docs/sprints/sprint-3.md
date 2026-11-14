@@ -13,6 +13,10 @@ steps; 2 only compute the changed region; 3 reuse work between steps; 4 fewer
 steps; 5 work small then enlarge; 6 remove add-on overhead; 7 use the idle
 graphics chip; 8 save prompt-reading results to disk.
 
+Prior work is checked first: see `docs/prior-work.md`. Theories 1 and 2 are
+already proven by others at many steps; ours to test is whether they survive
+at 4 steps.
+
 ## Entries
 
 ### E1 — How much does the on-the-fly add-on cost? (theory 6)

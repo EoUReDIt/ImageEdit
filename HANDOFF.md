@@ -50,6 +50,8 @@ experiment in flight and the next one queued.
 
 ## Files
 
+- `docs/prior-work.md` — which theories others already proved; check and
+  extend it before testing any new theory.
 - `docs/roadmap.md` — thesis, three layers, stops A–G, speed theories.
 - `docs/predictions.md` — every prediction and result.
 - `docs/sprints/` — one plain-language report per sprint.
