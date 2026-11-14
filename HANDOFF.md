@@ -13,6 +13,12 @@ scene / outfit / pose, an optional prompt, one output image. Simple UI. Run a
 ~20B editing model (Qwen-Image-Edit-2511 class) locally in <= 1.8 GB VRAM via a
 custom C++/Vulkan streaming runtime. The owner tests on a low-end Windows PC.
 
+## Method
+
+Discovery-based: build to the theory first, then test, then compare against the
+arithmetic baseline in `docs/predictions.md`. The arithmetic validates results;
+it does not veto building. Predictions are fixed before each test.
+
 ## Done
 
 - `runtime/streambench/` — Vulkan benchmark of the core idea: bit-packed
@@ -22,6 +28,7 @@ custom C++/Vulkan streaming runtime. The owner tests on a low-end Windows PC.
   for 2-bit and 4-bit, at hidden size 3072.
 - `docs/runtime-design.md` — budget arithmetic, verdict on each of the five
   planned optimizations, build order, model swapping, legal summary.
+- `docs/predictions.md` — theory target vs arithmetic baseline vs measured, per claim.
 - `.github/workflows/streambench.yml` — builds `streambench.exe` for Windows
   and runs a correctness check on Linux.
 
@@ -44,10 +51,12 @@ doc. This is an estimate until streambench runs on real hardware.
 1. Owner: run `streambench.exe --bits 2 --json streambench-result.json` on the
    low-end PC and share the output (see `runtime/streambench/README.md`).
 2. Get a mid-tier GPU result too. The cloud session has no GPU.
-3. With real numbers, decide: 20B at reduced tokens, or a ~4B model for the low
-   tier; and whether to extend stable-diffusion.cpp/ggml or write from scratch.
-4. Then: GGUF loader + K-quant dequant shaders, one real DiT block checked
-   against a reference, encoder phase with key/value prefix cache, UI.
+3. Log both results in `docs/predictions.md`.
+4. Build on, per the theory, without waiting for the results: GGUF loader +
+   K-quant dequant shaders streaming real tensors through the ring; then one
+   real DiT block checked against a reference; then the encoder phase with
+   key/value prefix cache; then the UI.
+5. Open choice: extend stable-diffusion.cpp/ggml or write from scratch.
 
 ## Decisions
 
