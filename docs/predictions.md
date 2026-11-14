@@ -144,6 +144,13 @@ reported to be reliable with 2–3 references only).
 | H4 all four | subject + outfit + scene + stick figure | 1–2 of 3 changes right; face drifts. ~15 min; held < 4 GB | Reveals whether Q2_K blurs the face | — |
 | H4' three | subject + outfit + scene | 2 of 2 changes right; face kept. ~12 min | (not tested in review) | — |
 
+Added during the run (after H3a–H3c, before H4k ran): H3b showed the pose
+skeleton is the pose input that works, so H4 is also run with it.
+
+| Test | Pictures | Our prediction | Measured |
+|---|---|---|---|
+| H4k four, skeleton | subject + outfit + scene + skeleton | Better than H4: no figure painted in; 2 of 3 changes right (four pictures is above the reported 2–3 limit). ~15 min | — |
+
 ### Step 2 — laptop, CPU, 4 steps, 512x512 (owner runs)
 
 | Measure | Our prediction (Sprint 2) | Gemini's prediction | Measured |
@@ -171,6 +178,9 @@ weights and compresses them again, so a small quality loss is possible; the
 clean route is merging into the full-precision file first (needs ~40 GB disk).
 Added prediction: picture visibly the same as the add-on-at-run-time version
 on H1 and E5; if not, double compression is the suspect.
+Runs: E6a = E5's hat-and-beach edit (compare image-making with E5's 323 s);
+E6b = H1 (compare with H1's 602 s). Prediction: both ~20% faster image-making,
+held memory ~0.8 GB lower during image-making.
 
 | Our prediction | Gemini's prediction | Measured |
 |---|---|---|
