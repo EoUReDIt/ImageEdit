@@ -38,17 +38,27 @@ it does not veto building. Predictions are fixed before each test.
 
 ## Not done / not verified
 
-- Nothing has run on a real GPU. No speed number is real yet.
+- Nothing has run on a real GPU. The only real speed numbers are CPU-only.
 - No real model is loaded: no GGUF parser, no K-quant layouts, no attention,
   no VAE, no encoder phase, no UI.
 - The Windows build has not been run on a real machine.
 
-## Key finding so far
+## Key findings so far
 
-VRAM fits. Time probably does not: arithmetic, not PCIe, is the bottleneck.
-A 20B model at 640² with one reference is ~510 TFLOP per image; 2 GB-class
-cards sustain roughly 1 TFLOPS, so expect minutes, not 55–85 s. See the design
-doc. This is an estimate until streambench runs on real hardware.
+- The full pipeline works end to end on upstream stable-diffusion.cpp with the
+  2-bit model and the 4-step LoRA. Measured in the cloud container on 4 CPU
+  cores, no GPU: 512x512, 4 steps, one reference = 628 s total (encoder 30 s,
+  denoising 449 s, VAE decode 92 s), 9.0 GB peak memory, correct edit.
+  Details in `docs/predictions.md`; images in `docs/results/`.
+- The earlier arithmetic baseline was too pessimistic (it counted all 20B
+  parameters per token; each token uses about half).
+- The owner's test PC is an i5-1135G7 laptop, 16 GB RAM, Intel Iris Xe
+  integrated graphics. No PCIe bus, no dedicated VRAM: the binding limit is
+  16 GB RAM, and theory points 2–3 (bus compression, async ring) cannot be
+  tested on it. They still need a discrete-GPU machine.
+- Model files are verified and listed in `docs/predictions.md` (results log).
+  They live in `/home/user/models` in the cloud container (lost when the
+  container is reclaimed; re-download from Hugging Face).
 
 ## Next steps
 
@@ -59,8 +69,10 @@ doc. This is an estimate until streambench runs on real hardware.
 3. Build the gaps from `docs/upstream-gap-analysis.md` as patches against
    upstream commit `0f8a467`, in this order: telemetry, persistent conditioning
    cache, physical VRAM cap, prefix reuse, UI on `sd-server`.
-4. The cloud session cannot reach Hugging Face, so it cannot run a real model.
-   Patches can be compiled there but not exercised until that is allowed.
+4. Cheap speed-ups to try next, each with a prediction first: merge the LoRA
+   into the GGUF before quantizing; larger VAE tiles; fewer threads vs more.
+5. The cloud session runs in the "ImageEdit" environment, which allows
+   Hugging Face downloads. It has no GPU and cannot run PowerShell.
 
 ## Decisions
 

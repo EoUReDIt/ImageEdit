@@ -58,8 +58,23 @@ peak memory 8–9 GB.
 
 | Phase | Predicted | Measured |
 |---|---|---|
-| Encoder | ~24 s | — |
-| Denoising, 4 steps | ~320 s | — |
-| Peak process memory | 8–9 GB | — |
-| Total | — | — |
+| Encoder (VLM, cold) | ~24 s | 30.3 s |
+| Denoising, 4 steps | ~320 s | 449.0 s (122, 110, 110, 107 s per step) |
+| VAE decode (9 tiles) | not predicted | 91.7 s |
+| Total | not predicted | 628.2 s |
+| Peak process memory | 8–9 GB | 8.96 GB |
 
+Prompt: "change the text on the sign to 'hello'". Input and output:
+`docs/results/2026-11-14-input.png`, `docs/results/2026-11-14-cpu-512-4step.png`.
+
+Verdicts:
+- Denoising was 40% slower than predicted. The LoRA was applied at run time
+  (upstream's automatic choice for quantized weights), which adds work per
+  step that Run 1 did not have. Merging it into the model file before
+  quantizing should remove this.
+- Memory prediction held.
+- Ledger row 11 (quality at ~2 bpw): the edit is correct and clean in this one
+  sample. One image is not a quality study.
+- VAE decode with tiling took longer than one denoising step would suggest;
+  larger tiles or less overlap are the obvious lever.
+- Rows 1–6 (VRAM, bus, async ring) are untested: this was CPU only.
